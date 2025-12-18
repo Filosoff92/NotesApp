@@ -3,6 +3,7 @@ package com.example.notesapp;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,7 +17,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onItemClick(Note note);
+        void onItemClick(Note note, int position);
     }
 
     public NoteAdapter(List<Note> notes, OnItemClickListener listener) {
@@ -35,7 +36,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-        holder.bind(note, listener);
+        holder.bind(note, listener, position);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         return notes.size();
     }
 
-    static class NoteViewHolder extends RecyclerView.ViewHolder {
+    class NoteViewHolder extends RecyclerView.ViewHolder {
 
         TextView tvTitle, tvText;
 
@@ -53,11 +54,32 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             tvText = itemView.findViewById(R.id.tvText);
         }
 
-        void bind(Note note, OnItemClickListener listener) {
+        void bind(Note note, OnItemClickListener listener, int position) {
             tvTitle.setText(note.getTitle());
             tvText.setText(note.getText());
 
-            itemView.setOnClickListener(v -> listener.onItemClick(note));
+            itemView.setOnClickListener(v -> listener.onItemClick(note, position));
+
+            itemView.setOnLongClickListener(v -> {
+                PopupMenu menu = new PopupMenu(v.getContext(), v);
+                menu.inflate(R.menu.menu_note);
+
+                menu.setOnMenuItemClickListener(item -> {
+                    int id = item.getItemId();
+                    if (id == R.id.action_delete) {
+                        notes.remove(getAdapterPosition());
+                        notifyItemRemoved(getAdapterPosition());
+                        return true;
+                    } else if (id == R.id.action_edit) {
+                        listener.onItemClick(note, position);
+                        return true;
+                    }
+                    return false;
+                });
+
+                menu.show();
+                return true;
+            });
         }
     }
 }
